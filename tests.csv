@@ -10,6 +10,7 @@ FE-08,1 Formula evaluator,Engine,Disallowed constructs,"Method calls, member acc
 FE-09,1 Formula evaluator,Engine,Division by zero,Reported as an error; no exception escapes the engine,Yes,Yes,
 FE-10,1 Formula evaluator,Engine,Supported constructs,"Every operator, comparison, and built-in function in the grammar parses successfully",Yes,Yes,"Positive grammar coverage: numbers, unary minus, + - * /, parentheses, > >= < <= == !=, min, max, floor, has, whitespace, nesting"
 FE-11,1 Formula evaluator,Engine,Malformed syntax,"Incomplete or ill-formed formulas are rejected when loaded, with an error and no exception",Yes,Yes,"Covers empty input, dangling operators, unbalanced parentheses, wrong argument counts, has() on a non-variable, and characters or operators outside the grammar (including +x, 1e5, 0x10, .5)"
+FE-12,1 Formula evaluator,Engine,Null variables,Evaluate with a null variables dictionary throws ArgumentNullException,Yes,Yes,"Caller contract, not pack data: a null dictionary is an engine or application bug, so it throws rather than returning an error result"
 DV-01,2 Derived values,Engine,Maximum agents from total ranks,"Total ranks 2, 3, and 10 give 4, 6, and 20 agents",No,No,
 DV-02,2 Derived values,Engine,Per-Facet rank cap,Level 5 with a Facet at rank 6 is a violation; rank 5 is fine,No,No,
 DV-03,2 Derived values,Engine,Total rank cap,Level 5 with total ranks 11 is a violation; 10 is fine,No,No,
