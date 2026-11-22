@@ -76,9 +76,29 @@ public sealed class Formula
                 return new EvaluationResult(new FormulaValue.Boolean(bRes.Value), null);
             }
         }
+        catch (InvalidEvaluationResultException ierEx)
+        {
+            return new EvaluationResult(null, "Formula error: " + ierEx.Message + Environment.NewLine + $"Formula: {Source}");
+        }
+        catch (InvalidOperationException ioEx)
+        {
+            return new EvaluationResult(null, "Invalid Operation: " + ioEx.Message + Environment.NewLine + $"Formula: {Source}");
+        }
+        catch (DivideByZeroException dbzEx)
+        {
+            return new EvaluationResult(null, "Divide By Zero Error: " + dbzEx.Message + Environment.NewLine + $"Formula: {Source}");
+        }
+        catch (OverflowException ofEx)
+        {
+            return new EvaluationResult(null, "Overflow Exception: " + ofEx.Message + Environment.NewLine + $"Formula: {Source}");
+        }
+        catch (KeyNotFoundException knfEx)
+        {
+            return new EvaluationResult(null, "Key Not Found Error: " + knfEx.Message + Environment.NewLine + $"Formula: {Source}");
+        }
         catch (Exception ex)
         {
-            return new EvaluationResult(null, ex.Message + Environment.NewLine + $"Formula: {Source}");
+            return new EvaluationResult(null, "Unexpected Error: " + ex.Message + Environment.NewLine + $"Formula: {Source}");
         }
 
         return new EvaluationResult(null, $"Could not evaluate a valid result from the formula {Source}");
