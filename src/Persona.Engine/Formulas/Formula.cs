@@ -25,10 +25,10 @@ public sealed class Formula
     /// <returns>A ParseResult</returns>
     public static ParseResult Parse(string text)
     {
-        text = text.Trim(); // White space on either side doesn't matter, so remove it.
-
         // Check for empty string, can't parse nothing.
         if (string.IsNullOrEmpty(text)) return new ParseResult(null, "No expression provided, cannot parse");
+
+        text = text.Trim(); // White space on either side doesn't matter, so remove it.
 
         // Parse for Tokens
         var (exprRoot, parsedVariables, error) = Parser.Parse(text);
