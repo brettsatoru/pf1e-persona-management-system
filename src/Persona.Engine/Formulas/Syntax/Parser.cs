@@ -5,7 +5,7 @@ internal sealed class Parser
     private const int MaxDepth = 64;
 
     private readonly List<Token> _tokens;
-    private readonly HashSet<string> _variables = new(StringComparer.Ordinal);
+    private readonly SortedSet<string> _variables = new(StringComparer.Ordinal);
     private int _pos;
     private int _depth;
 
