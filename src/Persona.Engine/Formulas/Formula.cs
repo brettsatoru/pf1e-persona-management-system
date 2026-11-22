@@ -44,6 +44,11 @@ public sealed class Formula
 
     public EvaluationResult Evaluate(IReadOnlyDictionary<string, decimal> variables)
     {
+        if (variables == null)
+        {
+            return new EvaluationResult(null, "No variables can be processed against a null dictionary");
+        }
+
         List<string> missingVariables = new List<string>();
         foreach (var symbol in this.ExprVariables)
         {
@@ -64,6 +69,7 @@ public sealed class Formula
         }
 
         // Evaluate the tree using the variables provided.
+        StringBuilder? errSb = null;
         try
         {
             var (dRes, bRes) = _treeRoot.Eval(variables);
@@ -78,27 +84,36 @@ public sealed class Formula
         }
         catch (InvalidEvaluationResultException ierEx)
         {
-            return new EvaluationResult(null, "Formula error: " + ierEx.Message + Environment.NewLine + $"Formula: {Source}");
-        }
-        catch (InvalidOperationException ioEx)
-        {
-            return new EvaluationResult(null, "Invalid Operation: " + ioEx.Message + Environment.NewLine + $"Formula: {Source}");
+            errSb = new StringBuilder();
+            errSb.AppendLine("Formula Error:");
+            errSb.AppendLine(ierEx.Message);
+            errSb.Append($"Formula: {Source}");
         }
         catch (DivideByZeroException dbzEx)
         {
-            return new EvaluationResult(null, "Divide By Zero Error: " + dbzEx.Message + Environment.NewLine + $"Formula: {Source}");
+            errSb = new StringBuilder();
+            errSb.AppendLine("Divide By Zero Error:");
+            errSb.AppendLine(dbzEx.Message);
+            errSb.Append($"Formula: {Source}");
         }
         catch (OverflowException ofEx)
         {
-            return new EvaluationResult(null, "Overflow Exception: " + ofEx.Message + Environment.NewLine + $"Formula: {Source}");
+            errSb = new StringBuilder();
+            errSb.AppendLine("Overflow Error:");
+            errSb.AppendLine(ofEx.Message);
+            errSb.Append($"Formula: {Source}");
         }
         catch (KeyNotFoundException knfEx)
         {
-            return new EvaluationResult(null, "Key Not Found Error: " + knfEx.Message + Environment.NewLine + $"Formula: {Source}");
+            errSb = new StringBuilder();
+            errSb.AppendLine("Key Not Found Error:");
+            errSb.AppendLine(knfEx.Message);
+            errSb.Append($"Formula: {Source}");
         }
-        catch (Exception ex)
+
+        if (errSb != null)
         {
-            return new EvaluationResult(null, "Unexpected Error: " + ex.Message + Environment.NewLine + $"Formula: {Source}");
+            return new EvaluationResult(null, errSb.ToString());
         }
 
         return new EvaluationResult(null, $"Could not evaluate a valid result from the formula {Source}");
