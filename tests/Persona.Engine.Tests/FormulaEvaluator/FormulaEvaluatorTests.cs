@@ -128,6 +128,20 @@ public class FormulaEvaluatorTests
         result.Error.ShouldNotBeNull().ShouldContain("rank");
     }
 
+    [Fact]
+    [Trait("TestId", "FE-07")]
+    public void Evaluate_SeveralUnknownVariables_ListedInSortedOrder()
+    {
+        var formula = ParseOrFail("zeta + alpha");
+
+        var result = formula.Evaluate(NoVariables);
+
+        result.IsSuccess.ShouldBeFalse();
+        var lines = result.Error.ShouldNotBeNull()
+            .Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        lines.Skip(1).ShouldBe(new[] { "alpha", "zeta" });
+    }
+
     [Theory]
     [Trait("TestId", "FE-08")]
     [InlineData("Math.Max(1, 2)")]
@@ -157,6 +171,21 @@ public class FormulaEvaluatorTests
 
         result.IsSuccess.ShouldBeFalse();
         result.Error.ShouldNotBeNullOrWhiteSpace();
+    }
+
+    [Theory]
+    [Trait("TestId", "FE-09")]
+    [InlineData("79228162514264337593543950335 * 2", "Overflow")]
+    [InlineData("79228162514264337593543950335 + 1", "Overflow")]
+    [InlineData("1 / 0", "Divide By Zero")]
+    public void Evaluate_ArithmeticFault_ReturnsLabelledError(string text, string expectedLabel)
+    {
+        var formula = ParseOrFail(text);
+
+        var result = Should.NotThrow(() => formula.Evaluate(NoVariables));
+
+        result.IsSuccess.ShouldBeFalse();
+        result.Error.ShouldNotBeNull().ShouldContain(expectedLabel);
     }
 
     [Theory]
@@ -224,5 +253,24 @@ public class FormulaEvaluatorTests
 
         parsed.IsSuccess.ShouldBeFalse();
         parsed.Error.ShouldNotBeNullOrWhiteSpace();
+    }
+
+    [Fact]
+    [Trait("TestId", "FE-11")]
+    public void Parse_NullText_IsRejected()
+    {
+        var parsed = Should.NotThrow(() => Formula.Parse(null!));
+
+        parsed.IsSuccess.ShouldBeFalse();
+        parsed.Error.ShouldNotBeNullOrWhiteSpace();
+    }
+
+    [Fact]
+    [Trait("TestId", "FE-12")]
+    public void Evaluate_NullVariables_Throws()
+    {
+        var formula = ParseOrFail("1 + 1");
+
+        Should.Throw<ArgumentNullException>(() => formula.Evaluate(null!));
     }
 }

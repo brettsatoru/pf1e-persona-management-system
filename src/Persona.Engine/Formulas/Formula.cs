@@ -44,10 +44,7 @@ public sealed class Formula
 
     public EvaluationResult Evaluate(IReadOnlyDictionary<string, decimal> variables)
     {
-        if (variables == null)
-        {
-            return new EvaluationResult(null, "No variables can be processed against a null dictionary");
-        }
+        ArgumentNullException.ThrowIfNull(variables);
 
         List<string> missingVariables = new List<string>();
         foreach (var symbol in this.ExprVariables)
