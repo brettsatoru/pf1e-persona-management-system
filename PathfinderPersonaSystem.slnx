@@ -5,6 +5,7 @@
     <File Path=".gitignore" />
     <File Path="Directory.Build.props" />
     <File Path="global.json" />
+    <File Path="tests.csv" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Persona.Engine/Persona.Engine.csproj" />

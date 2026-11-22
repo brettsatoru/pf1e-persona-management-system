@@ -1,13 +1,15 @@
 id,suite,project,test_case,expected_behavior,written,initial_passing,notes
-FE-01,1 Formula evaluator,Engine,Operator precedence and parentheses,15 + 2 * (3 + 1) evaluates to 23,No,No,
-FE-02,1 Formula evaluator,Engine,min and max,"min(10 + 12, 20) is 20; max(0, -3) is 0",No,No,
-FE-03,1 Formula evaluator,Engine,floor,floor(7 / 5) is 1; floor(4 / 5) is 0,No,No,
-FE-04,1 Formula evaluator,Engine,Margin formula with a floor,"2 + max(0, floor(margin / 5)) gives 2 for margin -4, 3 for margin 5, 5 for margin 15",No,No,
-FE-05,1 Formula evaluator,Engine,Comparisons and null checks,missingAgents > 0 compares correctly; a null check is true when a value is supplied and false when absent,No,No,
-FE-06,1 Formula evaluator,Engine,Named variables,Variables resolve from the supplied context,No,No,
-FE-07,1 Formula evaluator,Engine,Unknown variable,Reported as an error that names the variable,No,No,
-FE-08,1 Formula evaluator,Engine,Disallowed constructs,"Method calls, member access, and assignments are rejected when the formula is loaded",No,No,"Packs are uploaded to a hosted site, so formulas must never run as arbitrary code"
-FE-09,1 Formula evaluator,Engine,Division by zero,Reported as an error; no exception escapes the engine,No,No,
+FE-01,1 Formula evaluator,Engine,Operator precedence and parentheses,15 + 2 * (3 + 1) evaluates to 23,Yes,Yes,
+FE-02,1 Formula evaluator,Engine,min and max,"min(10 + 12, 20) is 20; max(0, -3) is 0",Yes,Yes,
+FE-03,1 Formula evaluator,Engine,floor,floor(7 / 5) is 1; floor(4 / 5) is 0,Yes,Yes,
+FE-04,1 Formula evaluator,Engine,Margin formula with a floor,"2 + max(0, floor(margin / 5)) gives 2 for margin -4, 3 for margin 5, 5 for margin 15",Yes,Yes,
+FE-05,1 Formula evaluator,Engine,Comparisons and null checks,missingAgents > 0 compares correctly; a null check is true when a value is supplied and false when absent,Yes,Yes,
+FE-06,1 Formula evaluator,Engine,Named variables,Variables resolve from the supplied context,Yes,Yes,
+FE-07,1 Formula evaluator,Engine,Unknown variable,Reported as an error that names the variable,Yes,Yes,
+FE-08,1 Formula evaluator,Engine,Disallowed constructs,"Method calls, member access, and assignments are rejected when the formula is loaded",Yes,Yes,"Packs are uploaded to a hosted site, so formulas must never run as arbitrary code"
+FE-09,1 Formula evaluator,Engine,Division by zero,Reported as an error; no exception escapes the engine,Yes,Yes,
+FE-10,1 Formula evaluator,Engine,Supported constructs,"Every operator, comparison, and built-in function in the grammar parses successfully",Yes,Yes,"Positive grammar coverage: numbers, unary minus, + - * /, parentheses, > >= < <= == !=, min, max, floor, has, whitespace, nesting"
+FE-11,1 Formula evaluator,Engine,Malformed syntax,"Incomplete or ill-formed formulas are rejected when loaded, with an error and no exception",Yes,Yes,"Covers empty input, dangling operators, unbalanced parentheses, wrong argument counts, has() on a non-variable, and characters or operators outside the grammar (including +x, 1e5, 0x10, .5)"
 DV-01,2 Derived values,Engine,Maximum agents from total ranks,"Total ranks 2, 3, and 10 give 4, 6, and 20 agents",No,No,
 DV-02,2 Derived values,Engine,Per-Facet rank cap,Level 5 with a Facet at rank 6 is a violation; rank 5 is fine,No,No,
 DV-03,2 Derived values,Engine,Total rank cap,Level 5 with total ranks 11 is a violation; 10 is fine,No,No,
