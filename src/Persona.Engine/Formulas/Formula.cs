@@ -78,10 +78,10 @@ public sealed class Formula
         }
         catch (Exception ex)
         {
-            return new EvaluationResult(null, ex.Message);
+            return new EvaluationResult(null, ex.Message + Environment.NewLine + $"Formula: {Source}");
         }
 
-        return new EvaluationResult(null, "Could not evaluate a valid result from the formula");
+        return new EvaluationResult(null, $"Could not evaluate a valid result from the formula {Source}");
     }
 
     public override string ToString()
