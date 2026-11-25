@@ -1,5 +1,6 @@
 using Persona.Engine.Formulas;
 using Persona.Engine.Formulas.Syntax;
+using Persona.Engine.Tests.Support;
 
 using Shouldly;
 
@@ -10,18 +11,11 @@ public class FormulaEvaluatorTests
     private static readonly IReadOnlyDictionary<string, decimal> NoVariables =
         new Dictionary<string, decimal>();
 
-    private static Formula ParseOrFail(string text)
-    {
-        var parsed = Formula.Parse(text);
-        parsed.Error.ShouldBeNull();
-        return parsed.Formula.ShouldNotBeNull();
-    }
-
     [Fact]
     [Trait("TestId", "FE-01")]
     public void Evaluate_ArithmeticWithParentheses_RespectsPrecedence()
     {
-        var formula = ParseOrFail("15 + 2 * (3 + 1)");
+        var formula = FormulaAssertions.ParseOrFail("15 + 2 * (3 + 1)");
 
         var result = formula.Evaluate(NoVariables);
 
@@ -34,7 +28,7 @@ public class FormulaEvaluatorTests
     [InlineData("max(0, -3)", 0)]
     public void Evaluate_MinAndMax_ReturnsSmallerAndLarger(string text, int expected)
     {
-        var formula = ParseOrFail(text);
+        var formula = FormulaAssertions.ParseOrFail(text);
 
         var result = formula.Evaluate(NoVariables);
 
@@ -48,7 +42,7 @@ public class FormulaEvaluatorTests
     [InlineData("floor(-4 / 5)", -1)]
     public void Evaluate_Floor_RoundsDown(string text, int expected)
     {
-        var formula = ParseOrFail(text);
+        var formula = FormulaAssertions.ParseOrFail(text);
 
         var result = formula.Evaluate(NoVariables);
 
@@ -62,7 +56,7 @@ public class FormulaEvaluatorTests
     [InlineData(15, 5)]
     public void Evaluate_MarginFormula_HasFloorOfTwo(int margin, int expected)
     {
-        var formula = ParseOrFail("2 + max(0, floor(margin / 5))");
+        var formula = FormulaAssertions.ParseOrFail("2 + max(0, floor(margin / 5))");
         var variables = new Dictionary<string, decimal> { ["margin"] = margin };
 
         var result = formula.Evaluate(variables);
@@ -76,7 +70,7 @@ public class FormulaEvaluatorTests
     [InlineData(1, true)]
     public void Evaluate_Comparison_ReturnsBoolean(int missingAgents, bool expected)
     {
-        var formula = ParseOrFail("missingAgents > 0");
+        var formula = FormulaAssertions.ParseOrFail("missingAgents > 0");
         var variables = new Dictionary<string, decimal> { ["missingAgents"] = missingAgents };
 
         var result = formula.Evaluate(variables);
@@ -90,7 +84,7 @@ public class FormulaEvaluatorTests
     [InlineData(false)]
     public void Evaluate_NullCheck_TrueOnlyWhenSupplied(bool supplied)
     {
-        var formula = ParseOrFail("has(targetRank)");
+        var formula = FormulaAssertions.ParseOrFail("has(targetRank)");
         var variables = supplied
             ? new Dictionary<string, decimal> { ["targetRank"] = 3 }
             : new Dictionary<string, decimal>();
@@ -104,7 +98,7 @@ public class FormulaEvaluatorTests
     [Trait("TestId", "FE-06")]
     public void Evaluate_NamedVariables_ResolveFromContext()
     {
-        var formula = ParseOrFail("committedAgents + targetRank");
+        var formula = FormulaAssertions.ParseOrFail("committedAgents + targetRank");
         var variables = new Dictionary<string, decimal>
         {
             ["committedAgents"] = 3,
@@ -120,7 +114,7 @@ public class FormulaEvaluatorTests
     [Trait("TestId", "FE-07")]
     public void Evaluate_UnknownVariable_ReturnsErrorNamingIt()
     {
-        var formula = ParseOrFail("rank + 1");
+        var formula = FormulaAssertions.ParseOrFail("rank + 1");
 
         var result = formula.Evaluate(NoVariables);
 
@@ -132,7 +126,7 @@ public class FormulaEvaluatorTests
     [Trait("TestId", "FE-07")]
     public void Evaluate_SeveralUnknownVariables_ListedInSortedOrder()
     {
-        var formula = ParseOrFail("zeta + alpha");
+        var formula = FormulaAssertions.ParseOrFail("zeta + alpha");
 
         var result = formula.Evaluate(NoVariables);
 
@@ -164,7 +158,7 @@ public class FormulaEvaluatorTests
     [InlineData("x / y")]
     public void Evaluate_DivisionByZero_ReturnsError(string text)
     {
-        var formula = ParseOrFail(text);
+        var formula = FormulaAssertions.ParseOrFail(text);
         var variables = new Dictionary<string, decimal> { ["x"] = 1, ["y"] = 0 };
 
         var result = Should.NotThrow(() => formula.Evaluate(variables));
@@ -180,7 +174,7 @@ public class FormulaEvaluatorTests
     [InlineData("1 / 0", "Divide By Zero")]
     public void Evaluate_ArithmeticFault_ReturnsLabelledError(string text, string expectedLabel)
     {
-        var formula = ParseOrFail(text);
+        var formula = FormulaAssertions.ParseOrFail(text);
 
         var result = Should.NotThrow(() => formula.Evaluate(NoVariables));
 
@@ -269,7 +263,7 @@ public class FormulaEvaluatorTests
     [Trait("TestId", "FE-12")]
     public void Evaluate_NullVariables_Throws()
     {
-        var formula = ParseOrFail("1 + 1");
+        var formula = FormulaAssertions.ParseOrFail("1 + 1");
 
         Should.Throw<ArgumentNullException>(() => formula.Evaluate(null!));
     }
@@ -283,7 +277,7 @@ public class FormulaEvaluatorTests
     [InlineData("x / 5", 4)]   // x = 24 → 4.8 → 4
     public void Evaluate_Division_RoundsDown(string text, int expected)
     {
-        var formula = ParseOrFail(text);
+        var formula = FormulaAssertions.ParseOrFail(text);
         var variables = new Dictionary<string, decimal> { ["x"] = 24 };
 
         var result = formula.Evaluate(variables);
@@ -309,7 +303,7 @@ public class FormulaEvaluatorTests
     [Trait("TestId", "FE-14")]
     public void Parse_FormulaUnderTokenLimit_Evaluates()
     {
-        var formula = ParseOrFail(string.Join("+", Enumerable.Repeat("1", 128))); // 255 tokens
+        var formula = FormulaAssertions.ParseOrFail(string.Join("+", Enumerable.Repeat("1", 128))); // 255 tokens
 
         formula.Evaluate(NoVariables).Value.ShouldBe(new FormulaValue.Number(128));
     }
@@ -340,6 +334,6 @@ public class FormulaEvaluatorTests
     [InlineData("(x > 1) == (y > 1)", FormulaType.Boolean)]
     public void Parse_ResultType_IsReported(string text, FormulaType expected)
     {
-        ParseOrFail(text).ResultType.ShouldBe(expected);
+        FormulaAssertions.ParseOrFail(text).ResultType.ShouldBe(expected);
     }
 }

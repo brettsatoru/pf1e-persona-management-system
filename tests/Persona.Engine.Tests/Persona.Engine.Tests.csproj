@@ -20,7 +20,6 @@
 
   <ItemGroup>
     <Folder Include="FormulaEvaluator\" />
-    <Folder Include="DerivedValues\" />
     <Folder Include="CheckResolver\" />
     <Folder Include="AgentLifecycle\" />
     <Folder Include="Abilities\" />
