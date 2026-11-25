@@ -1,21 +1,24 @@
-﻿using System.Text;
-
-using Persona.Engine.Formulas.Syntax;
+﻿using Persona.Engine.Formulas.Syntax;
 
 namespace Persona.Engine.Formulas;
 
+public enum FormulaType { Number, Boolean }
+
 public sealed class Formula
 {
+    private const int MAX_SOURCE_LENGTH = 2048;
     private readonly Expr _treeRoot;
 
     public string Source { get; }
     public IReadOnlySet<string> ExprVariables { get; }
+    public FormulaType ResultType { get; }
 
-    private Formula(string source, Expr root, IReadOnlySet<string> variables)
+    private Formula(string source, Expr root, IReadOnlySet<string> variables, FormulaType typeOf)
     {
         _treeRoot = root;
         Source = source;
         ExprVariables = variables;
+        ResultType = typeOf;
     }
 
     /// <summary>
@@ -30,11 +33,16 @@ public sealed class Formula
 
         text = text.Trim(); // White space on either side doesn't matter, so remove it.
 
-        // Parse for Tokens
-        var (exprRoot, parsedVariables, error) = Parser.Parse(text);
-        if (exprRoot != null && parsedVariables != null)
+        if (text.Length > MAX_SOURCE_LENGTH)
         {
-            return new ParseResult(new Formula(text, exprRoot, parsedVariables), error);
+            return new ParseResult(null, $"Formula is longer than {MAX_SOURCE_LENGTH} characters.");
+        }
+
+        // Parse for Tokens
+        var (exprRoot, parsedVariables, formulaType, error) = Parser.Parse(text);
+        if (exprRoot != null && parsedVariables != null && formulaType != null)
+        {
+            return new ParseResult(new Formula(text, exprRoot, parsedVariables, formulaType.Value), error);
         }
         else
         {
@@ -56,17 +64,11 @@ public sealed class Formula
         }
         if (missingVariables.Count > 0)
         {
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine("Cannot evaluate the formula " + Source + " due to missing variable definitions:");
-            foreach (var m in missingVariables)
-            {
-                sb.AppendLine($"{m}");
-            }
-            return new EvaluationResult(null, sb.ToString());
+            string mVars = string.Join("\n", missingVariables);
+            return Error("Missing Variable Error", $"Cannot evaluate the formula due to missing variables:\n{mVars}");
         }
 
         // Evaluate the tree using the variables provided.
-        StringBuilder? errSb = null;
         try
         {
             var (dRes, bRes) = _treeRoot.Eval(variables);
@@ -79,38 +81,17 @@ public sealed class Formula
                 return new EvaluationResult(new FormulaValue.Boolean(bRes.Value), null);
             }
         }
-        catch (InvalidEvaluationResultException ierEx)
-        {
-            errSb = new StringBuilder();
-            errSb.AppendLine("Formula Error:");
-            errSb.AppendLine(ierEx.Message);
-            errSb.Append($"Formula: {Source}");
-        }
         catch (DivideByZeroException dbzEx)
         {
-            errSb = new StringBuilder();
-            errSb.AppendLine("Divide By Zero Error:");
-            errSb.AppendLine(dbzEx.Message);
-            errSb.Append($"Formula: {Source}");
+            return Error("Divide By Zero Error", dbzEx.Message);
         }
         catch (OverflowException ofEx)
         {
-            errSb = new StringBuilder();
-            errSb.AppendLine("Overflow Error:");
-            errSb.AppendLine(ofEx.Message);
-            errSb.Append($"Formula: {Source}");
+            return Error("Overflow Error", ofEx.Message);
         }
         catch (KeyNotFoundException knfEx)
         {
-            errSb = new StringBuilder();
-            errSb.AppendLine("Key Not Found Error:");
-            errSb.AppendLine(knfEx.Message);
-            errSb.Append($"Formula: {Source}");
-        }
-
-        if (errSb != null)
-        {
-            return new EvaluationResult(null, errSb.ToString());
+            return Error("Key Not Found Error", knfEx.Message);
         }
 
         return new EvaluationResult(null, $"Could not evaluate a valid result from the formula {Source}");
@@ -120,4 +101,7 @@ public sealed class Formula
     {
         return Source;
     }
+
+    private EvaluationResult Error(string kind, string message) =>
+        new(null, $"{kind}: {message}\nFormula: {Source}");
 }

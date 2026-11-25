@@ -55,15 +55,12 @@ internal class Tokenizer
                 while (i < text.Length && char.IsAsciiDigit(text[i])) i++;
                 if (i < text.Length && text[i] == '.')
                 {
-                    i++;
-                    if (i >= text.Length || !char.IsAsciiDigit(text[i]))
-                        return (null, $"Expected digits after'.' at position {i}.");
-                    while (i < text.Length && char.IsAsciiDigit(text[i])) i++;
+                    return (null, $"Decimal numbers are not allowed at position {start}; formulas use whole numbers.");
                 }
                 if (i < text.Length && (char.IsAsciiLetterOrDigit(text[i]) || text[i] == '_'))
                     return (null, $"Malformed number at position {start}.");
 
-                if (!decimal.TryParse(text.AsSpan(start, i - start), System.Globalization.NumberStyles.AllowDecimalPoint,
+                if (!decimal.TryParse(text.AsSpan(start, i - start), System.Globalization.NumberStyles.None,
                     CultureInfo.InvariantCulture, out var value))
                     return (null, $"Number cannot be parsed at {start}.");
 

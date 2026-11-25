@@ -34,6 +34,11 @@ internal abstract record Expr
         {
             return (Value, null);
         }
+
+        public override FormulaType TypeOf()
+        {
+            return FormulaType.Number;
+        }
     }
     internal sealed record Variable(string Name) : Expr
     {
@@ -45,6 +50,11 @@ internal abstract record Expr
             }
 
             throw new KeyNotFoundException($"No variable named {Name} available.");
+        }
+
+        public override FormulaType TypeOf()
+        {
+            return FormulaType.Number;
         }
     }
 
@@ -65,6 +75,13 @@ internal abstract record Expr
             }
 
             throw new InvalidDataException("Cannot evaluate operand to negate from either bool or decimal.");
+        }
+
+        public override FormulaType TypeOf()
+        {
+            if (Operand.TypeOf() != FormulaType.Number)
+                throw Fail($"Negate needs numbers, not true/false values.");
+            return FormulaType.Number;
         }
     }
 
@@ -103,6 +120,15 @@ internal abstract record Expr
             }
 
             throw new InvalidOperationException("Op not set to a handled value");
+        }
+
+        public override FormulaType TypeOf()
+        {
+            if (Left.TypeOf() != FormulaType.Number || Right.TypeOf() != FormulaType.Number)
+            {
+                throw Fail("Arithmetic Expression needs numbers, not true/false values.");
+            }
+            return FormulaType.Number;
         }
     }
 
@@ -160,6 +186,22 @@ internal abstract record Expr
 
             throw new InvalidOperationException("Op not set to a handled value");
         }
+
+        public override FormulaType TypeOf()
+        {
+            return CheckComparison();
+        }
+
+        private FormulaType CheckComparison()
+        {
+            var l = Left.TypeOf();
+            var r = Right.TypeOf();
+            if (l != r)
+                throw Fail("Cannot compare a number with a true/false value.");
+            if (l == FormulaType.Boolean && Op is not (ComparisonOp.EQL or ComparisonOp.NOTEQ))
+                throw Fail("True/false values can only be compared with == or !=.");
+            return FormulaType.Boolean;
+        }
     }
 
     // Functions one record each
@@ -179,6 +221,15 @@ internal abstract record Expr
                 throw new InvalidEvaluationResultException("Cannot evaluate Min() with boolean values");
             }
         }
+
+        public override FormulaType TypeOf()
+        {
+            if (Left.TypeOf() != FormulaType.Number || Right.TypeOf() != FormulaType.Number)
+            {
+                throw Fail("Min Function needs numbers, not true/false values.");
+            }
+            return FormulaType.Number;
+        }
     }
     internal sealed record Max(Expr Left, Expr Right) : Expr
     {
@@ -195,6 +246,15 @@ internal abstract record Expr
             {
                 throw new InvalidEvaluationResultException("Cannot evaluate Max() with boolean values");
             }
+        }
+
+        public override FormulaType TypeOf()
+        {
+            if (Left.TypeOf() != FormulaType.Number || Right.TypeOf() != FormulaType.Number)
+            {
+                throw Fail("Max Function needs numbers, not true/false values.");
+            }
+            return FormulaType.Number;
         }
     }
     internal sealed record Floor(Expr Operand) : Expr
@@ -213,6 +273,15 @@ internal abstract record Expr
                 throw new InvalidEvaluationResultException("Cannot evaluate a bool expression with Floor()");
             }
         }
+
+        public override FormulaType TypeOf()
+        {
+            if (Operand.TypeOf() != FormulaType.Number)
+            {
+                throw Fail("Floor Function needs numbers, not true/false values.");
+            }
+            return FormulaType.Number;
+        }
     }
     internal sealed record Has(string VariableName) : Expr
     {
@@ -220,9 +289,18 @@ internal abstract record Expr
         {
             return (null, variables.ContainsKey(VariableName));
         }
+
+        public override FormulaType TypeOf()
+        {
+            return FormulaType.Boolean;
+        }
     }
 
     internal abstract (decimal?, bool?) Eval(IReadOnlyDictionary<string, decimal> variables);
+    public abstract FormulaType TypeOf();
+
+    internal static FormulaSyntaxException Fail(string message) => new(message);
 }
 
+internal sealed class FormulaSyntaxException(string message) : Exception(message);
 internal sealed class InvalidEvaluationResultException(string message) : Exception(message);

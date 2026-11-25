@@ -2,7 +2,8 @@
 
 internal sealed class Parser
 {
-    private const int MaxDepth = 64;
+    private const int MAX_TOKENS = 256;
+    private const int MAX_DEPTH = 64;
 
     private readonly List<Token> _tokens;
     private readonly SortedSet<string> _variables = new(StringComparer.Ordinal);
@@ -11,22 +12,29 @@ internal sealed class Parser
 
     private Parser(List<Token> tokens) => _tokens = tokens;
 
-    internal static (Expr?, IReadOnlySet<string>?, string?) Parse(string text)
+    internal static (Expr?, IReadOnlySet<string>?, FormulaType?, string?) Parse(string text)
     {
         var (tokens, err) = Tokenizer.GetTokens(text);
         if (err is not null || tokens is null)
-            return (null, null, err ?? "No tokens could be produced.");
+            return (null, null, null, err ?? "No tokens could be produced.");
+
+        // Confirm too many tokens haven't been produced.
+        if (tokens.Count - 1 > MAX_TOKENS)
+        {
+            return (null, null, null, $"Formula has {tokens.Count -1 } parts (limit {MAX_TOKENS}).");
+        }
 
         var p = new Parser(tokens);
         try
         {
             var root = p.ParseComparison();
             p.Expect(TokenType.End, "end of formula");
-            return (root, p._variables, null);
+            var type = root.TypeOf();
+            return (root, p._variables, type, null);
         }
         catch (FormulaSyntaxException ex)
         {
-            return (null, null, ex.Message);
+            return (null, null, null, ex.Message);
         }
     }
 
@@ -93,7 +101,7 @@ internal sealed class Parser
 
             case TokenType.Identifier:
                 if (Peek.type == TokenType.OPara)
-                    throw Fail($"Unknown function '{t.Text}' at position {t.Position}.");
+                    throw Expr.Fail($"Unknown function '{t.Text}' at position {t.Position}.");
                 _variables.Add(t.Text!);
                 return new Expr.Variable(t.Text!);
 
@@ -131,7 +139,7 @@ internal sealed class Parser
                 }
 
             default:
-                throw Fail($"Unexpected {Describe(t)} at position {t.Position}.");
+                throw Expr.Fail($"Unexpected {Describe(t)} at position {t.Position}.");
         }
     }
 
@@ -155,7 +163,7 @@ internal sealed class Parser
     private Token Expect(TokenType type, string what)
     {
         if (Peek.type != type)
-            throw Fail($"Expected {what} but found {Describe(Peek)} at position {Peek.Position}.");
+            throw Expr.Fail($"Expected {what} but found {Describe(Peek)} at position {Peek.Position}.");
         return Advance();
     }
 
@@ -169,8 +177,8 @@ internal sealed class Parser
 
     private DepthScope Enter()
     {
-        if (++_depth > MaxDepth)
-            throw Fail($"Formula is nested too deeply (limit {MaxDepth}).");
+        if (++_depth > MAX_DEPTH)
+            throw Expr.Fail($"Formula is nested too deeply (limit {MAX_DEPTH}).");
         return new DepthScope(this);
     }
 
@@ -178,8 +186,4 @@ internal sealed class Parser
     {
         public void Dispose() => p._depth--;
     }
-
-    private static FormulaSyntaxException Fail(string message) => new(message);
-
-    private sealed class FormulaSyntaxException(string message) : Exception(message);
 }

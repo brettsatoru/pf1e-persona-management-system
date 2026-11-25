@@ -139,7 +139,7 @@ public class FormulaEvaluatorTests
         result.IsSuccess.ShouldBeFalse();
         var lines = result.Error.ShouldNotBeNull()
             .Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-        lines.Skip(1).ShouldBe(new[] { "alpha", "zeta" });
+        lines.Skip(1).SkipLast(1).ShouldBe(new[] { "alpha", "zeta" });
     }
 
     [Theory]
@@ -191,7 +191,6 @@ public class FormulaEvaluatorTests
     [Theory]
     [Trait("TestId", "FE-10")]
     [InlineData("42")]
-    [InlineData("1.5")]
     [InlineData("-3")]
     [InlineData("-x")]
     [InlineData("x + y")]
@@ -247,6 +246,7 @@ public class FormulaEvaluatorTests
     [InlineData("1e5")]
     [InlineData("0x10")]
     [InlineData(".5")]
+    [InlineData("1.9")]
     public void Parse_MalformedSyntax_IsRejected(string text)
     {
         var parsed = Should.NotThrow(() => Formula.Parse(text));
@@ -272,5 +272,74 @@ public class FormulaEvaluatorTests
         var formula = ParseOrFail("1 + 1");
 
         Should.Throw<ArgumentNullException>(() => formula.Evaluate(null!));
+    }
+
+    [Theory]
+    [Trait("TestId", "FE-13")]
+    [InlineData("(17 - 10) / 2", 3)]
+    [InlineData("7 / 2", 3)]
+    [InlineData("4 / 5", 0)]
+    [InlineData("-7 / 2", -4)]
+    [InlineData("x / 5", 4)]   // x = 24 → 4.8 → 4
+    public void Evaluate_Division_RoundsDown(string text, int expected)
+    {
+        var formula = ParseOrFail(text);
+        var variables = new Dictionary<string, decimal> { ["x"] = 24 };
+
+        var result = formula.Evaluate(variables);
+
+        result.Value.ShouldBe(new FormulaValue.Number(expected));
+    }
+
+    [Theory]
+    [Trait("TestId", "FE-14")]
+    [InlineData(50_000)] // over the character limit
+    [InlineData(200)]    // 399 characters, under the character limit, but 399 tokens
+    public void Parse_OversizedFormula_IsRejected(int terms)
+    {
+        var text = string.Join("+", Enumerable.Repeat("1", terms));
+
+        var parsed = Should.NotThrow(() => Formula.Parse(text));
+
+        parsed.IsSuccess.ShouldBeFalse();
+        parsed.Error.ShouldNotBeNullOrWhiteSpace();
+    }
+
+    [Fact]
+    [Trait("TestId", "FE-14")]
+    public void Parse_FormulaUnderTokenLimit_Evaluates()
+    {
+        var formula = ParseOrFail(string.Join("+", Enumerable.Repeat("1", 128))); // 255 tokens
+
+        formula.Evaluate(NoVariables).Value.ShouldBe(new FormulaValue.Number(128));
+    }
+
+    [Theory]
+    [Trait("TestId", "FE-15")]
+    [InlineData("(x > 1) + 1")]
+    [InlineData("min(has(x), 1)")]
+    [InlineData("floor(x > 1)")]
+    [InlineData("-(x > 0)")]
+    [InlineData("-has(x)")]
+    [InlineData("(x > 1) == 1")]
+    [InlineData("(x > 1) > (y > 1)")]
+    public void Parse_TypeMismatch_IsRejected(string text)
+    {
+        var parsed = Should.NotThrow(() => Formula.Parse(text));
+
+        parsed.IsSuccess.ShouldBeFalse();
+        parsed.Error.ShouldNotBeNullOrWhiteSpace();
+    }
+
+    [Theory]
+    [Trait("TestId", "FE-16")]
+    [InlineData("x + 1", FormulaType.Number)]
+    [InlineData("min(x, 1)", FormulaType.Number)]
+    [InlineData("x > 1", FormulaType.Boolean)]
+    [InlineData("has(x)", FormulaType.Boolean)]
+    [InlineData("(x > 1) == (y > 1)", FormulaType.Boolean)]
+    public void Parse_ResultType_IsReported(string text, FormulaType expected)
+    {
+        ParseOrFail(text).ResultType.ShouldBe(expected);
     }
 }
